@@ -18,7 +18,7 @@ from typing import Callable
 
 if __name__ == '__main__':
 
-    iterations = 5_000_000
+    iterations = 100_000
 
     agents = ['random', matrix_agent, rule_based_agent, agentc1, agentc2, agentc3, agentc5]
 
@@ -50,23 +50,165 @@ if __name__ == '__main__':
     # Create the vectorized environment
     vec_env = SubprocVecEnv([make_env(i) for i in range(num_cpu)])
 
+    # 1
+    # https://www.kaggle.com/toshikazuwatanabe/connect4-make-submission-with-stable-baselines3
+    # class Net(BaseFeaturesExtractor):
+    #
+    #     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 512):
+    #
+    #         super(Net, self).__init__(observation_space, features_dim)
+    #         print(observation_space)
+    #         self.conv1 = nn.Conv2d(3, 32, kernel_size=3)
+    #         self.conv2 = nn.Conv2d(32, 64, kernel_size=3)
+    #         self.fc3 = nn.Linear(384, features_dim)
+    #
+    #     def forward(self, x):
+    #         x = F.relu(F.batch_norm(self.conv1(x), running_mean=None, running_var=None, training=True))
+    #         x = F.relu(F.batch_norm(self.conv2(x), running_mean=None, running_var=None, training=True))
+    #         x = nn.Flatten()(x)
+    #         x = F.relu(self.fc3(x))
+    #         x = F.dropout(x)
+    #
+    #         return x
+
+        # 2
+        # https://github.com/PaddlePaddle/PARL/blob/0915559a1dd1b9de74ddd2b261e2a4accd0cd96a/benchmark/torch/AlphaZero/submission_template.py#L423
+    # class Net(BaseFeaturesExtractor):
+    #
+    #     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 512):
+    #         super(Net, self).__init__(observation_space, features_dim)
+    #
+    #         self.conv1 = nn.Conv2d(1, 64, 3, stride=1, padding=1)
+    #         self.conv2 = nn.Conv2d(64, 64, 3, stride=1, padding=1)
+    #         self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
+    #         self.conv4 = nn.Conv2d(64, 64, 3, stride=1)
+    #
+    #         self.bn1 = nn.BatchNorm2d(64)
+    #         self.bn2 = nn.BatchNorm2d(64)
+    #         self.bn3 = nn.BatchNorm2d(64)
+    #         self.bn4 = nn.BatchNorm2d(64)
+    #
+    #         self.fc1 = nn.Linear(64 * (7 - 4) * (6 - 4), 128)
+    #         self.fc_bn1 = nn.BatchNorm1d(128)
+    #
+    #         self.fc2 = nn.Linear(128, 64)
+    #         self.fc_bn2 = nn.BatchNorm1d(64)
+    #
+    #         self.fc3 = nn.Linear(64, features_dim)
+    #
+    #         self.fc4 = nn.Linear(64, 1)
+    #
+    #     def forward(self, s):
+    #         #                                                            s: batch_size x board_x x board_y
+    #         s = s.view(-1, 1, 7, 6)  # batch_size x 1 x board_x x board_y
+    #         s = F.relu(self.bn1(self.conv1(s)))  # batch_size x num_channels x board_x x board_y
+    #         s = F.relu(self.bn2(self.conv2(s)))  # batch_size x num_channels x board_x x board_y
+    #         s = F.relu(self.bn3(self.conv3(s)))  # batch_size x num_channels x (board_x-2) x (board_y-2)
+    #         s = F.relu(self.bn4(self.conv4(s)))  # batch_size x num_channels x (board_x-4) x (board_y-4)
+    #         s = s.view(-1,64 * (7 - 4) * (6 - 4))
+    #
+    #         s = F.dropout(
+    #             F.relu(self.fc_bn1(self.fc1(s))),
+    #             p=0.3,
+    #             training=self.training)  # batch_size x 128
+    #         s = F.dropout(
+    #             F.relu(self.fc_bn2(self.fc2(s))),
+    #             p=0.3,
+    #             training=self.training)  # batch_size x 64
+    #
+    #         pi = self.fc3(s)  # batch_size x action_size
+    #         # v = self.fc4(s)  # batch_size x 1
+    #
+    #         # return F.log_softmax(pi), th.tanh(v)
+    #         return F.log_softmax(pi)
+
+    # 3
+    # https://github.com/boettiger-lab/gym_wildfire/blob/26127f389566ab920107bfbc65d56bcc16199d1a/examples/sb3/ppo.py
+    # class Net(BaseFeaturesExtractor):
+    #     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
+    #         super(Net, self).__init__(observation_space, features_dim)
+    #         n_input_channels = observation_space.shape[0]
+    #         self.cnn = nn.Sequential(
+    #             nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=1, padding=0),
+    #             nn.ReLU(),
+    #             nn.Conv2d(32, 64, kernel_size=2, stride=1, padding=0),
+    #             nn.ReLU(),
+    #             nn.Flatten(),
+    #         )
+    #         with th.no_grad():
+    #             n_flatten = self.cnn(
+    #                 th.as_tensor(observation_space.sample()[None]).float()
+    #             ).shape[1]
+    #         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+    #
+    #     def forward(self, observations: th.Tensor) -> th.Tensor:
+    #         return self.linear(self.cnn(observations))
+
+    # 4
+    # https://github.com/greentfrapp/snake/blob/45a9dce92c092b5c65412a666892c71360524772/train_vanilla.py
     class Net(BaseFeaturesExtractor):
-
-        def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 512):
-
+        def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
             super(Net, self).__init__(observation_space, features_dim)
-            self.conv1 = nn.Conv2d(1, 32, kernel_size=3)
-            self.conv2 = nn.Conv2d(32, 64, kernel_size=3)
-            self.fc3 = nn.Linear(384, features_dim)
+            # We assume CxHxW images (channels first)
+            # Re-ordering will be done by pre-preprocessing or wrapper
+            n_input_channels = observation_space.shape[0]
+            self.cnn = nn.Sequential(
+                nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=0),
+                nn.ReLU(),
+                nn.Flatten(),
+            )
 
-        def forward(self, x):
-            x = F.relu(F.batch_norm(self.conv1(x), running_mean=None, running_var=None, training=True))
-            x = F.relu(F.batch_norm(self.conv2(x), running_mean=None, running_var=None, training=True))
-            x = nn.Flatten()(x)
-            x = F.relu(self.fc3(x))
-            x = F.dropout(x)
+            # Compute shape by doing one forward pass
+            with th.no_grad():
+                n_flatten = self.cnn(th.as_tensor(observation_space.sample()[None]).float()).shape[1]
 
-            return x
+            self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+
+        def forward(self, observations: th.Tensor) -> th.Tensor:
+            return self.linear(self.cnn(observations))
+
+    # 5
+    # https://github.com/denisergashbaev/rl_playground/blob/f4a80c3f0e4ace462b40a87b881bffd0387e7759/algs/dqn/reference/network.py
+    # class Net(BaseFeaturesExtractor):
+    #     """
+    #     :param observation_space: (gym.Space)
+    #     :param features_dim: (int) Number of features extracted.
+    #         This corresponds to the number of unit for the last layer.
+    #     """
+    #
+    #     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 128):
+    #         super(Net, self).__init__(observation_space, features_dim)
+    #         # We assume CxHxW images (channels first)
+    #         # Re-ordering will be done by pre-preprocessing or wrapper
+    #         in_channels = observation_space.shape[0]
+    #         self.cnn = nn.Sequential(
+    #             nn.Conv2d(in_channels, 32, kernel_size=1, stride=1),
+    #             nn.ReLU(),
+    #             nn.Conv2d(32, 64, kernel_size=3, stride=1),
+    #             nn.ReLU(),
+    #             nn.Conv2d(64, 64, kernel_size=3, stride=1),
+    #             nn.ReLU(),
+    #             nn.Conv2d(64, 128, kernel_size=2, stride=1),
+    #             nn.ReLU(),
+    #             nn.Flatten(),
+    #         )
+    #
+    #         # Compute shape by doing one forward pass
+    #         with th.no_grad():
+    #             n_flatten = self.cnn(th.as_tensor(observation_space.sample()[None]).float()).shape[1]
+    #
+    #         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+    #
+    #     def forward(self, observations: th.Tensor) -> th.Tensor:
+    #         return self.linear(self.cnn(observations))
+
+    # device = th.device("cuda" if th.cuda.is_available() else "cpu")  # PyTorch v0.4.0
+    # model = Net(None).to(device)
+    # summary(model, (1, 6, 7))
 
     policy_kwargs = {
         'activation_fn': th.nn.ReLU,
@@ -75,6 +217,7 @@ if __name__ == '__main__':
     }
 
     learner = PPO('MlpPolicy', vec_env, policy_kwargs=policy_kwargs)
+    # learner = PPO('MlpPolicy', vec_env)
 
     eval_callback = SaveBestModelCallback('RDaneelConnect4_', 1000, agents)
 

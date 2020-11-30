@@ -17,6 +17,46 @@ def board_flip(mark, board):
                 board[i, j, 0] = board[i, j, 0] % 2 + 1
                 return board
 
+def board_3layers(mark, board):
+    rows = board[0].shape[0]
+    columns = board[0].shape[1]
+
+    layer1 = board[0].copy()
+    for c in range(0, columns):
+        for r in range(rows - 1, -1, -1):
+            value = layer1[r, c]
+            if value == 1:
+                layer1[r, c] = 1
+            else:
+                layer1[r, c] = 0
+
+    layer2 = board[0].copy()
+    for c in range(0, columns):
+        for r in range(rows - 1, -1, -1):
+            value = layer2[r, c]
+            if value == 2:
+                layer2[r, c] = 1
+            else:
+                layer2[r, c] = 0
+
+    layer3 = board[0].copy()
+    for c in range(0, columns):
+        for r in range(rows - 1, -1, -1):
+            value = layer3[r, c]
+            if value == 0:
+                if (mark == 1):
+                    layer3[r, c] = 1
+                else:
+                    layer3[r, c] = -1
+                break
+            else:
+                layer3[r, c] = 0
+
+    board = np.array([layer1, layer2, layer3])
+
+    return board
+
+
 class ConnectFourGym():
     def __init__(self, opponent_pool=np.asarray(['random']), distribution='even'):
         self.ks_env = make("connectx", debug=True)
@@ -25,7 +65,7 @@ class ConnectFourGym():
         # Learn about spaces here: http://gym.openai.com/docs/#spaces
         self.action_space = gym.spaces.Discrete(self.columns)
         self.observation_space = gym.spaces.Box(low=0, high=1,
-                                                shape=(1, self.rows, self.columns), dtype=np.float)
+                                                shape=(3, self.rows, self.columns), dtype=np.float)
         # Tuple corresponding to the min and max possible rewards
         self.reward_range = (-10, 1)
         # StableBaselines throws error if these are not defined
@@ -53,7 +93,13 @@ class ConnectFourGym():
         self.init_env()
         self.obs = self.env.reset()
         self.last_action = -1
-        return board_flip(self.obs.mark, np.array(self.obs['board']).reshape(1, self.rows, self.columns) / 2)
+        # board = np.array(self.obs['board']).reshape(1, self.rows, self.columns) / 2
+        # board = board_flip(self.obs.mark, board)
+        board = np.array(self.obs['board']).reshape(1, self.rows, self.columns)
+        board = board_3layers(self.obs.mark, board)
+        # print(type(board))
+        # print(board)
+        return board
 
     def change_reward(self, old_reward, done):
         if old_reward == 1:  # The agent won the game
@@ -73,8 +119,13 @@ class ConnectFourGym():
             reward, done, _ = -10, True, {}
         if done:
             self.reset()
-        return board_flip(self.obs.mark,
-                          np.array(self.obs['board']).reshape(1, self.rows, self.columns) / 2), reward, done, _
+        # board = np.array(self.obs['board']).reshape(1, self.rows, self.columns) / 2
+        # board = board_flip(self.obs.mark,board)
+        board = np.array(self.obs['board']).reshape(1, self.rows, self.columns)
+        board = board_3layers(self.obs.mark,board)
+        # print(type(board))
+        # print(board)
+        return board, reward, done, _
 
 class SaveBestModelCallback(BaseCallback):
     """
