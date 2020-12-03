@@ -52,7 +52,7 @@ def board_3layers(mark, board):
             else:
                 layer3[r, c] = 0
 
-    board = np.array([layer1, layer2, layer3])
+    board = np.array([[layer1, layer2, layer3]])
 
     return board
 
@@ -65,7 +65,7 @@ class ConnectFourGym():
         # Learn about spaces here: http://gym.openai.com/docs/#spaces
         self.action_space = gym.spaces.Discrete(self.columns)
         self.observation_space = gym.spaces.Box(low=0, high=1,
-                                                shape=(3, self.rows, self.columns), dtype=np.float)
+                                                shape=(1, 3, self.rows, self.columns), dtype=np.float)
         # Tuple corresponding to the min and max possible rewards
         self.reward_range = (-10, 1)
         # StableBaselines throws error if these are not defined
@@ -97,8 +97,6 @@ class ConnectFourGym():
         # board = board_flip(self.obs.mark, board)
         board = np.array(self.obs['board']).reshape(1, self.rows, self.columns)
         board = board_3layers(self.obs.mark, board)
-        # print(type(board))
-        # print(board)
         return board
 
     def change_reward(self, old_reward, done):
@@ -123,8 +121,6 @@ class ConnectFourGym():
         # board = board_flip(self.obs.mark,board)
         board = np.array(self.obs['board']).reshape(1, self.rows, self.columns)
         board = board_3layers(self.obs.mark,board)
-        # print(type(board))
-        # print(board)
         return board, reward, done, _
 
 class SaveBestModelCallback(BaseCallback):

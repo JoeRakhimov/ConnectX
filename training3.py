@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from torchsummary import summary
 
 from agents import agentc1, agentc2, agentc3, agentc5, matrix_agent, rule_based_agent
 from common import get_win_percentages_and_score
@@ -153,11 +154,11 @@ if __name__ == '__main__':
             # Re-ordering will be done by pre-preprocessing or wrapper
             n_input_channels = observation_space.shape[0]
             self.cnn = nn.Sequential(
-                nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=1, padding=1),
+                nn.Conv3d(n_input_channels, 32, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(),
-                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.Conv3d(32, 64, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(),
-                nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=0),
+                nn.Conv3d(64, 128, kernel_size=3, stride=1, padding=0),
                 nn.ReLU(),
                 nn.Flatten(),
             )
@@ -208,7 +209,7 @@ if __name__ == '__main__':
 
     # device = th.device("cuda" if th.cuda.is_available() else "cpu")  # PyTorch v0.4.0
     # model = Net(None).to(device)
-    # summary(model, (1, 6, 7))
+    # summary(model, (3, 6, 7))
 
     policy_kwargs = {
         'activation_fn': th.nn.ReLU,
